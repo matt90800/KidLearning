@@ -1,0 +1,132 @@
+<div class="game">
+
+  <header class="game-header">
+    <div>
+      <h1>🎓 Apprends les lettres</h1>
+      <p>Écoute le son et trouve la bonne lettre</p>
+    </div>
+
+    <div class="score">
+      ⭐ {{ score }}
+    </div>
+  </header>
+
+  <mat-progress-bar
+    mode="determinate"
+    [value]="progress">
+  </mat-progress-bar>
+
+  <main class="game-content">
+
+    <mat-card class="question-card">
+
+      <div class="question">
+        <span class="question-label">
+          Quel est ce son ?
+        </span>
+
+        <button
+          mat-fab
+          color="primary"
+          class="sound-button"
+          type="button"
+          (click)="playCurrentPhoneme()">
+
+          <mat-icon>volume_up</mat-icon>
+        </button>
+
+        <span class="question-hint">
+          Écoute puis choisis la lettre
+        </span>
+      </div>
+
+      <div class="choices">
+
+        @for (choice of choices; track choice.letter) {
+
+          <button
+            mat-raised-button
+            class="letter-choice"
+            [class.correct]="answered && choice.letter === currentLetter.letter"
+            [class.wrong]="answered && !correct && choice.letter !== currentLetter.letter"
+            [disabled]="answered"
+            (click)="selectLetter(choice)">
+
+            <span class="big-letter">
+              {{ choice.letter }}
+            </span>
+
+            <span class="small-letter">
+              {{ choice.lowercase }}
+            </span>
+
+          </button>
+
+        }
+
+      </div>
+
+      @if (answered) {
+
+        <div
+          class="feedback"
+          [class.success]="correct"
+          [class.error]="!correct">
+
+          @if (correct) {
+
+            <div>
+              <span class="feedback-icon">🎉</span>
+
+              <strong>Bravo !</strong>
+
+              <span>
+                {{ currentLetter.letter }} comme
+                {{ currentLetter.word }}
+                {{ currentLetter.emoji }}
+              </span>
+            </div>
+
+          } @else {
+
+            <div>
+              <span class="feedback-icon">💡</span>
+
+              <strong>Presque !</strong>
+
+              <span>
+                C'était
+                {{ currentLetter.letter }}
+              </span>
+            </div>
+
+          }
+
+          <button
+            mat-raised-button
+            color="primary"
+            (click)="continueGame()">
+
+            Continuer
+
+            <mat-icon>arrow_forward</mat-icon>
+
+          </button>
+
+        </div>
+
+      }
+
+    </mat-card>
+
+    @if (streak > 1) {
+
+      <div class="streak">
+        🔥 {{ streak }} bonnes réponses d'affilée !
+      </div>
+
+    }
+
+  </main>
+
+</div>

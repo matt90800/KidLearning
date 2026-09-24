@@ -1,0 +1,32 @@
+<div class="toolbar">
+
+  <button (click)="small.emit()">
+    🖍 Petit
+  </button>
+
+  <button (click)="medium.emit()">
+    🖍 Moyen
+  </button>
+
+  <button (click)="large.emit()">
+    🖍 Grand
+  </button>
+
+
+  <label class="color-button">
+
+    🎨
+
+    <input type="color"
+           [value]="store.selected()?.color ?? '#ff0000'"
+           (input)="changeColor($event)">
+
+  </label>
+
+
+  <button class="reset"
+          (click)="reset.emit()">
+    ↺ Reset
+  </button>
+
+</div>

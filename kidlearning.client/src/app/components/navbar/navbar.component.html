@@ -1,0 +1,41 @@
+<mat-toolbar class="navbar">
+  <a class="brand" routerLink="/">
+    <span>Kids Learning</span>
+  </a>
+
+  <span class="spacer"></span>
+
+  <!-- Desktop -->
+  <nav class="nav-links">
+    <a mat-button routerLink="/pencil" routerLinkActive="active">
+      <mat-icon>edit</mat-icon>
+      Jeux de stylos
+    </a>
+
+    <a mat-button routerLink="/letter" routerLinkActive="active">
+      <mat-icon>text_fields</mat-icon>
+      Jeux de lettres
+    </a>
+  </nav>
+
+  <!-- Mobile -->
+  <button
+    mat-icon-button
+    class="mobile-menu"
+    [matMenuTriggerFor]="menu"
+    aria-label="Ouvrir le menu">
+    <mat-icon>menu</mat-icon>
+  </button>
+</mat-toolbar>
+
+<mat-menu #menu="matMenu">
+  <a mat-menu-item routerLink="/pencil">
+    <mat-icon>edit</mat-icon>
+    <span>Jeux de stylos</span>
+  </a>
+
+  <a mat-menu-item routerLink="/letter">
+    <mat-icon>text_fields</mat-icon>
+    <span>Jeux de lettres</span>
+  </a>
+</mat-menu>

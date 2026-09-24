@@ -1,0 +1,21 @@
+<div
+  class="pencil-container"
+  cdkDrag
+  (dblclick)="rotate($event)"
+  (wheel)="onWheel($event)"
+  (click)="select()"
+>
+
+    <div
+        class="pencil"
+        [class.selected]="isSelected()"
+        [style.width.px]="pencil.width"
+        [style.height.px]="pencil.height"
+        [style.background]="pencil.color"
+        [style.transform]="'rotate(' + pencil.rotation + 'deg)'"
+    >
+
+       
+    </div>
+
+</div>

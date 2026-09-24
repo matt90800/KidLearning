@@ -1,0 +1,52 @@
+.pencil-container {
+
+    position:absolute;
+
+    transform-origin:center center;
+
+}
+
+
+.pencil {
+
+    display:flex;
+
+    align-items:center;
+
+    border-radius:10px;
+
+    cursor:grab;
+
+    box-shadow:0 5px 10px #0003;
+
+    transform-origin:center center;
+
+}
+
+
+.pencil:active {
+
+    cursor:grabbing;
+
+}
+
+
+.tip {
+
+    width:0;
+    height:0;
+
+    border-top:9px solid transparent;
+    border-bottom:9px solid transparent;
+    border-right:18px solid #ddd;
+
+    position:absolute;
+
+    right:-18px;
+
+}
+
+.selected {
+  outline: 4px solid dodgerblue;
+  outline-offset: 6px;
+}

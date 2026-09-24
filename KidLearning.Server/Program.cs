@@ -1,6 +1,15 @@
+using KidsLearning.Api.Services;
+using KidsLearning.Server;
+using KidsLearning.Server.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.Configure<SpeechOptions>(
+    builder.Configuration.GetSection("Speech"));
+builder.Services.AddSingleton<WyomingClient>();
+
+builder.Services.AddScoped<ISpeechService, PiperSpeechService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

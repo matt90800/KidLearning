@@ -1,0 +1,209 @@
+.game {
+  min-height: calc(100vh - 64px);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.game-header {
+  max-width: 900px;
+  margin: 0 auto 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  h1 {
+    margin: 0;
+    font-size: 28px;
+  }
+
+  p {
+    margin: 6px 0 0;
+    color: #666;
+  }
+}
+
+.score {
+  font-size: 22px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+mat-progress-bar {
+  max-width: 900px;
+  margin: 0 auto;
+  display: block;
+}
+
+.game-content {
+  max-width: 900px;
+  margin: 24px auto;
+}
+
+.question-card {
+  padding: 32px;
+  border-radius: 24px;
+}
+
+.question {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.question-label {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.sound-button {
+  width: 80px;
+  height: 80px;
+
+  mat-icon {
+    font-size: 38px;
+    width: 38px;
+    height: 38px;
+  }
+}
+
+.question-hint {
+  color: #777;
+}
+
+.choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 36px;
+}
+
+.letter-choice {
+  min-height: 180px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  border-radius: 20px;
+}
+
+.big-letter {
+  font-size: 72px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.small-letter {
+  margin-top: 12px;
+  font-size: 28px;
+}
+
+.letter-choice.correct {
+  border: 4px solid #4caf50;
+}
+
+.letter-choice.wrong {
+  opacity: 0.45;
+}
+
+.feedback {
+  margin-top: 28px;
+  padding: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  border-radius: 16px;
+
+  > div {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+}
+
+.feedback-icon {
+  font-size: 32px;
+}
+
+.feedback.success {
+  background: #e8f5e9;
+}
+
+.feedback.error {
+  background: #fff3e0;
+}
+
+.streak {
+  margin-top: 20px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+@media (max-width: 600px) {
+
+  .game {
+    padding: 12px;
+  }
+
+  .game-header {
+    align-items: flex-start;
+
+    h1 {
+      font-size: 22px;
+    }
+
+    p {
+      font-size: 14px;
+    }
+  }
+
+  .score {
+    font-size: 18px;
+  }
+
+  .question-card {
+    padding: 20px 12px;
+  }
+
+  .question-label {
+    font-size: 18px;
+  }
+
+  .choices {
+    gap: 10px;
+  }
+
+  .letter-choice {
+    min-height: 140px;
+  }
+
+  .big-letter {
+    font-size: 52px;
+  }
+
+  .small-letter {
+    font-size: 22px;
+  }
+
+  .feedback {
+    flex-direction: column;
+    text-align: center;
+
+    > div {
+      flex-direction: column;
+    }
+
+    button {
+      width: 100%;
+    }
+  }
+}

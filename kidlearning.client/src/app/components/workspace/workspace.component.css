@@ -1,0 +1,11 @@
+.workspace{
+    position:relative;
+    overflow:hidden;
+
+    background-size:30px 30px;
+    background-image:
+    linear-gradient(#0001 1px,transparent 1px),
+    linear-gradient(90deg,#0001 1px,transparent 1px);
+    
+    height: 630px;
+}
