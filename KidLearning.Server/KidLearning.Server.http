@@ -1,0 +1,6 @@
+@KidLearning.Server_HostAddress = http://localhost:5143
+
+GET {{KidLearning.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

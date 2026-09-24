@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="kidlearning.client/kidlearning.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="KidLearning.Server/KidLearning.Server.csproj" />
+</Solution>
