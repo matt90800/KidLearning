@@ -1,4 +1,4 @@
-﻿namespace KidsLearning.Server.Services;
+﻿namespace KidLearning.Server.Services;
 
 public interface ISpeechService
 {

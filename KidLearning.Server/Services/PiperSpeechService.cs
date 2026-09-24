@@ -1,7 +1,6 @@
-﻿using KidsLearning.Server.Services;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 
-namespace KidsLearning.Api.Services;
+namespace KidLearning.Server.Services;
 
 public sealed class PiperSpeechService : ISpeechService
 {

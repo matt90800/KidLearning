@@ -2,21 +2,17 @@
 using System.Text;
 using System.Text.Json;
 
-namespace KidsLearning.Api.Services;
+namespace KidLearning.Server.Services;
 
 public sealed class WyomingClient
 {
     private readonly string _host;
     private readonly int _port;
 
-    public WyomingClient(
-        IConfiguration configuration)
+    public WyomingClient(IConfiguration configuration)
     {
-        _host = configuration["Speech:PiperHost"] ?? "piper";
-
-        _port = configuration.GetValue(
-            "Speech:PiperPort",
-            10200);
+        _host = configuration["Speech:PiperHost"] ?? "kidslearning-piper";
+        _port = configuration.GetValue("Speech:PiperPort", 10200);
     }
 
     public async Task<byte[]> SynthesizeAsync(
@@ -32,67 +28,133 @@ public sealed class WyomingClient
 
         await using var stream = client.GetStream();
 
-        // Tell Piper what client we are.
-        await SendEventAsync(
-            stream,
-            "describe",
-            new
-            {
-                text = "KidsLearning",
-                version = "1.0"
-            },
-            cancellationToken);
+        var audioRate = 22050;
+        var audioWidth = 2;
+        var audioChannels = 1;
 
-        // Ask Piper to synthesize the text.
-        await SendEventAsync(
-            stream,
-            "synthesize",
-            new
+        // Wyoming synthesize event
+        var synthesize = new
+        {
+            type = "synthesize",
+            data = new
             {
                 text
-            },
+            }
+        };
+
+        var json = JsonSerializer.Serialize(synthesize);
+
+        Console.WriteLine($"WYOMING SEND: {json}");
+
+        var message = Encoding.UTF8.GetBytes(json + "\n");
+
+        await stream.WriteAsync(
+            message,
             cancellationToken);
+
+        await stream.FlushAsync(cancellationToken);
 
         using var audio = new MemoryStream();
 
         while (true)
         {
-            var @event = await ReadEventAsync(
+            var headerLine = await ReadLineAsync(
                 stream,
                 cancellationToken);
 
-            if (@event is null)
+            if (headerLine is null)
                 break;
 
-            switch (@event.Value.Type)
+            Console.WriteLine($"WYOMING RECV: {headerLine}");
+
+            using var document = JsonDocument.Parse(headerLine);
+            var root = document.RootElement;
+
+            var type = root.GetProperty("type").GetString();
+
+            var payloadLength =
+                root.TryGetProperty(
+                    "payload_length",
+                    out var payloadProperty)
+                    ? payloadProperty.GetInt32()
+                    : 0;
+
+            var dataLength =
+                root.TryGetProperty(
+                    "data_length",
+                    out var dataProperty)
+                    ? dataProperty.GetInt32()
+                    : 0;
+
+            string? data = null;
+
+            // Read JSON data following the header
+            if (dataLength > 0)
             {
-                case "info":
-                    // Piper can send information about itself.
-                    break;
+                var dataBytes = await ReadExactlyAsync(
+                    stream,
+                    dataLength,
+                    cancellationToken);
 
-                case "audio-start":
-                    break;
+                data = Encoding.UTF8.GetString(dataBytes);
 
-                case "audio-chunk":
-                    if (@event.Value.Payload.Length > 0)
+                Console.WriteLine($"WYOMING DATA: {data}");
+            }
+
+            // Read raw payload
+            if (payloadLength > 0)
+            {
+                var payload = await ReadExactlyAsync(
+                    stream,
+                    payloadLength,
+                    cancellationToken);
+
+                if (type == "audio-chunk")
+                {
+                    // Piper sends audio parameters with every audio chunk
+                    if (data is not null)
                     {
-                        await audio.WriteAsync(
-                            @event.Value.Payload,
-                            cancellationToken);
+                        using var chunkDocument =
+                            JsonDocument.Parse(data);
+
+                        var chunk =
+                            chunkDocument.RootElement;
+
+                        audioRate =
+                            chunk.GetProperty("rate").GetInt32();
+
+                        audioWidth =
+                            chunk.GetProperty("width").GetInt32();
+
+                        audioChannels =
+                            chunk.GetProperty("channels").GetInt32();
                     }
 
-                    break;
+                    await audio.WriteAsync(
+                        payload,
+                        cancellationToken);
+                }
+            }
 
-                case "audio-stop":
-                    return audio.ToArray();
+            if (type == "audio-stop")
+            {
+                Console.WriteLine(
+                    $"Generated WAV: {audio.Length} bytes, " +
+                    $"{audioRate} Hz, " +
+                    $"{audioWidth} bytes/sample, " +
+                    $"{audioChannels} channel(s)");
 
-                case "error":
-                    throw new InvalidOperationException(
-                        $"Piper error: {@event.Value.Data}");
+                return CreateWav(
+                    audio.ToArray(),
+                    audioRate,
+                    audioWidth,
+                    audioChannels);
+            }
 
-                default:
-                    // Ignore events we don't need.
-                    break;
+            if (type == "error")
+            {
+                throw new InvalidOperationException(
+                    $"Piper returned an error: {headerLine}");
             }
         }
 
@@ -100,135 +162,36 @@ public sealed class WyomingClient
             "Piper closed the connection before returning audio.");
     }
 
-    private static async Task SendEventAsync(
-        NetworkStream stream,
-        string type,
-        object data,
-        CancellationToken cancellationToken)
-    {
-        var json = JsonSerializer.Serialize(data);
-        var jsonBytes = Encoding.UTF8.GetBytes(json);
-
-        var header =
-            $"{type}\n" +
-            $"{jsonBytes.Length}\n" +
-            "\n";
-
-        var headerBytes = Encoding.UTF8.GetBytes(header);
-
-        await stream.WriteAsync(
-            headerBytes,
-            cancellationToken);
-
-        await stream.WriteAsync(
-            jsonBytes,
-            cancellationToken);
-
-        await stream.FlushAsync(
-            cancellationToken);
-    }
-
-    private static async Task<WyomingEvent?> ReadEventAsync(
-        NetworkStream stream,
-        CancellationToken cancellationToken)
-    {
-        var type = await ReadLineAsync(
-            stream,
-            cancellationToken);
-
-        if (type is null)
-            return null;
-
-        var dataLengthLine = await ReadLineAsync(
-            stream,
-            cancellationToken);
-
-        if (dataLengthLine is null)
-            throw new InvalidOperationException(
-                "Invalid Wyoming event: missing data length.");
-
-        var payloadLengthLine = await ReadLineAsync(
-            stream,
-            cancellationToken);
-
-        if (payloadLengthLine is null)
-            throw new InvalidOperationException(
-                "Invalid Wyoming event: missing payload length.");
-
-        // Empty line separating headers from data.
-        var separator = await ReadLineAsync(
-            stream,
-            cancellationToken);
-
-        if (separator is null)
-            throw new InvalidOperationException(
-                "Invalid Wyoming event: missing header separator.");
-
-        if (!int.TryParse(
-                dataLengthLine,
-                out var dataLength))
-        {
-            throw new InvalidOperationException(
-                $"Invalid Wyoming data length: {dataLengthLine}");
-        }
-
-        if (!int.TryParse(
-                payloadLengthLine,
-                out var payloadLength))
-        {
-            throw new InvalidOperationException(
-                $"Invalid Wyoming payload length: {payloadLengthLine}");
-        }
-
-        var dataBytes = await ReadExactlyAsync(
-            stream,
-            dataLength,
-            cancellationToken);
-
-        var payload = await ReadExactlyAsync(
-            stream,
-            payloadLength,
-            cancellationToken);
-
-        var data = Encoding.UTF8.GetString(
-            dataBytes);
-
-        return new WyomingEvent(
-            type,
-            data,
-            payload);
-    }
-
     private static async Task<string?> ReadLineAsync(
         NetworkStream stream,
         CancellationToken cancellationToken)
     {
-        var buffer = new List<byte>();
+        using var buffer = new MemoryStream();
+
+        var oneByte = new byte[1];
 
         while (true)
         {
-            var value = new byte[1];
-
             var read = await stream.ReadAsync(
-                value,
+                oneByte,
                 cancellationToken);
 
             if (read == 0)
             {
-                if (buffer.Count == 0)
+                if (buffer.Length == 0)
                     return null;
 
-                throw new EndOfStreamException(
-                    "Unexpected end of Wyoming stream.");
+                break;
             }
 
-            if (value[0] == '\n')
-                return Encoding.UTF8.GetString(
-                    buffer.ToArray());
+            if (oneByte[0] == '\n')
+                break;
 
-            if (value[0] != '\r')
-                buffer.Add(value[0]);
+            buffer.WriteByte(oneByte[0]);
         }
+
+        return Encoding.UTF8.GetString(
+            buffer.ToArray());
     }
 
     private static async Task<byte[]> ReadExactlyAsync(
@@ -236,23 +199,21 @@ public sealed class WyomingClient
         int length,
         CancellationToken cancellationToken)
     {
-        if (length == 0)
-            return [];
-
         var buffer = new byte[length];
-
         var offset = 0;
 
         while (offset < length)
         {
             var read = await stream.ReadAsync(
-                buffer.AsMemory(offset, length - offset),
+                buffer.AsMemory(
+                    offset,
+                    length - offset),
                 cancellationToken);
 
             if (read == 0)
             {
-                throw new EndOfStreamException(
-                    "Unexpected end of Wyoming payload.");
+                throw new IOException(
+                    "Piper closed the connection while sending data.");
             }
 
             offset += read;
@@ -261,8 +222,65 @@ public sealed class WyomingClient
         return buffer;
     }
 
-    private readonly record struct WyomingEvent(
-        string Type,
-        string Data,
-        byte[] Payload);
+    private static byte[] CreateWav(
+        byte[] pcm,
+        int sampleRate,
+        int bytesPerSample,
+        int channels)
+    {
+        using var output = new MemoryStream();
+        using var writer = new BinaryWriter(output);
+
+        var blockAlign =
+            channels * bytesPerSample;
+
+        var byteRate =
+            sampleRate * blockAlign;
+
+        // RIFF header
+        writer.Write(
+            Encoding.ASCII.GetBytes("RIFF"));
+
+        writer.Write(
+            36 + pcm.Length);
+
+        writer.Write(
+            Encoding.ASCII.GetBytes("WAVE"));
+
+        // fmt chunk
+        writer.Write(
+            Encoding.ASCII.GetBytes("fmt "));
+
+        writer.Write(16); // PCM chunk size
+
+        writer.Write((short)1); // PCM format
+
+        writer.Write(
+            (short)channels);
+
+        writer.Write(
+            sampleRate);
+
+        writer.Write(
+            byteRate);
+
+        writer.Write(
+            (short)blockAlign);
+
+        writer.Write(
+            (short)(bytesPerSample * 8));
+
+        // data chunk
+        writer.Write(
+            Encoding.ASCII.GetBytes("data"));
+
+        writer.Write(
+            pcm.Length);
+
+        writer.Write(pcm);
+
+        writer.Flush();
+
+        return output.ToArray();
+    }
 }

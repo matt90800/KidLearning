@@ -1,4 +1,4 @@
-using KidsLearning.Server.Services;
+using KidLearning.Server.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KidsLearning.Api.Controllers;
